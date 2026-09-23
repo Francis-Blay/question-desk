@@ -9,6 +9,80 @@
 //
 // See https://tauri.app/develop/calling-rust/ for the full pattern.
 
+import { invoke } from "@tauri-apps/api/core";
+
+interface Question {
+  id: string
+  asker: string;
+  question: string;
+  context: string;
+  tags: string[];
+}
 window.addEventListener("DOMContentLoaded", () => {
-  // build your form + list rendering here
+  const form = document.querySelector("form")!;
+  const tagInput = document.querySelector<HTMLInputElement>("#tag-input")!;
+  const tbody = document.querySelector<HTMLTableSectionElement>("#questions-tbody")!;
+  const noQuestionsMsg =document.querySelector<HTMLHeadingElement>("#no-questions")!;
+  async function loadQuestions() {
+    const questions = await invoke<Question[]>("list_questions");
+
+    tbody.innerHTML = "";
+    if (questions.length === 0){
+      noQuestionsMsg.style.display = "block";
+      return;
+    }
+    noQuestionsMsg.style.display = "none";
+
+    questions.forEach((q) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${q.question}</td>
+        <td>${q.asker}</td>
+        <td>${q.context}</td>
+        <td>${q.tags.join(", ")}</td>
+        <td><button class="delete-btn" data-id="${q.id}">Delete</button> <button>Draft</button></td>
+      
+        `;
+        tbody.appendChild(row);
+    });
+  }
+  
+  
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const asker = formData.get("asker") as string;
+    const question = formData.get("question") as string;
+    const context = formData.get("context") as string;
+
+    const tags = tagInput.value
+      .split(",")
+      .map(t => t.trim())
+      .filter(Boolean);
+
+    try {
+      const saved = await invoke<string>("save_question", { asker, context, question, tags });
+      console.log(saved);
+      form.reset();
+      await loadQuestions();
+    } catch (err) {
+      console.error("Failed to save question:", err);
+    }
+  });
+  tbody.addEventListener("click", async (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains("delete-btn")) {
+        const id = target.dataset.id;
+        try {
+          await invoke("delete_question", { id })
+          await loadQuestions();
+        } catch (err) {
+          console.error("Failed to delete question:", err);
+        }
+      }
+  });
+   loadQuestions();
 });
+
+
