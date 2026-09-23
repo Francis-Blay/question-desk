@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Question Desk</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <main >
+      <h1>Question Desk</h1>
+        <form>
+            <div>
+                <h2>Question</h2>
+                <label>Asker</label>
+                <input type="text" name="asker" class="field-input">
+                <label>Question</label>
+                <input type="text" name="question" class="field-input">
+                <label>Context</label>
+                <input type="text" name="context" class="field-input">
+                <label>Tags</label>
+                <input type="text" id="tag-input" class="field-input" placeholder="tag1, tag2, tag3">
+            </div>
+            <br>
+          <button type="submit">Submit Request</button>
+        </form>
+        <br>
+        <br>
+        <div class="container">
+        <h2>List of Questions</h2>
+            <table id="Questions-table">
+              <thead>
+                <tr>
+                <th>Question</th>
+                <th>Asker</th>
+                <th>Context</th>
+                <th>Tags</th>
+                <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="questions-tbody">
+               
+              </tbody>
+            </table>
+          <h3 id="no-questions">No Questions found</h3>
+        </div>
+    </main>
+  </body>
+</html>
