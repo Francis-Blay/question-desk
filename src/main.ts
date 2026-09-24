@@ -28,16 +28,27 @@ window.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("form")!;
   const tagInput = document.querySelector<HTMLInputElement>("#tag-input")!;
   const tbody = document.querySelector<HTMLTableSectionElement>("#questions-tbody")!;
-  const noQuestionsMsg =document.querySelector<HTMLHeadingElement>("#no-questions")!;
+  const noQuestionsMsg = document.querySelector<HTMLHeadingElement>("#no-questions")!;
+
+  const showNoQuestionsMessage = (message: string) => {
+    noQuestionsMsg.textContent = message;
+    noQuestionsMsg.style.display = "block";
+  };
+
+  const hideNoQuestionsMessage = () => {
+    noQuestionsMsg.textContent = "No Questions found";
+    noQuestionsMsg.style.display = "none";
+  };
+
   async function loadQuestions() {
     const questions = await invoke<Question[]>("list_questions");
 
     tbody.innerHTML = "";
     if (questions.length === 0){
-      noQuestionsMsg.style.display = "block";
+      showNoQuestionsMessage("No Questions found");
       return;
     }
-    noQuestionsMsg.style.display = "none";
+    hideNoQuestionsMessage();
 
     questions.forEach((q) => {
       const row = document.createElement("tr");
@@ -97,7 +108,9 @@ window.addEventListener("DOMContentLoaded", () => {
           await invoke("draft_answer", { id })
           await loadQuestions();
         } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
           console.error("Failed to draft question:", err);
+          showNoQuestionsMessage(message);
         }
       }
   });
