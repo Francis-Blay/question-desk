@@ -11,12 +11,18 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
+interface Draft {
+  draft: string;
+  verify: string[];
+}
+
 interface Question {
-  id: string
+  id: string;
   asker: string;
   question: string;
   context: string;
   tags: string[];
+  draft: Draft | null;
 }
 window.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("form")!;
@@ -40,7 +46,11 @@ window.addEventListener("DOMContentLoaded", () => {
         <td>${q.asker}</td>
         <td>${q.context}</td>
         <td>${q.tags.join(", ")}</td>
-        <td><button class="delete-btn" data-id="${q.id}">Delete</button> <button>Draft</button></td>
+        <td>${q.draft ? q.draft.draft : "No draft yet"}</td>
+        <td>
+          <button class="delete-btn" data-id="${q.id}">Delete</button>
+          <button class="draft-btn" data-id="${q.id}">Draft</button>
+        </td>
       
         `;
         tbody.appendChild(row);
@@ -79,6 +89,15 @@ window.addEventListener("DOMContentLoaded", () => {
           await loadQuestions();
         } catch (err) {
           console.error("Failed to delete question:", err);
+        }
+      }
+      if (target.classList.contains("draft-btn")) {
+        const id = target.dataset.id;
+        try {
+          await invoke("draft_answer", { id })
+          await loadQuestions();
+        } catch (err) {
+          console.error("Failed to draft question:", err);
         }
       }
   });
