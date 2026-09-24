@@ -11,27 +11,44 @@
 
 import { invoke } from "@tauri-apps/api/core";
 
+interface Draft {
+  draft: string;
+  verify: string[];
+}
+
 interface Question {
-  id: string
+  id: string;
   asker: string;
   question: string;
   context: string;
   tags: string[];
+  draft: Draft | null;
 }
 window.addEventListener("DOMContentLoaded", () => {
   const form = document.querySelector("form")!;
   const tagInput = document.querySelector<HTMLInputElement>("#tag-input")!;
   const tbody = document.querySelector<HTMLTableSectionElement>("#questions-tbody")!;
-  const noQuestionsMsg =document.querySelector<HTMLHeadingElement>("#no-questions")!;
+  const noQuestionsMsg = document.querySelector<HTMLHeadingElement>("#no-questions")!;
+
+  const showNoQuestionsMessage = (message: string) => {
+    noQuestionsMsg.textContent = message;
+    noQuestionsMsg.style.display = "block";
+  };
+
+  const hideNoQuestionsMessage = () => {
+    noQuestionsMsg.textContent = "No Questions found";
+    noQuestionsMsg.style.display = "none";
+  };
+
   async function loadQuestions() {
     const questions = await invoke<Question[]>("list_questions");
 
     tbody.innerHTML = "";
     if (questions.length === 0){
-      noQuestionsMsg.style.display = "block";
+      showNoQuestionsMessage("No Questions found");
       return;
     }
-    noQuestionsMsg.style.display = "none";
+    hideNoQuestionsMessage();
 
     questions.forEach((q) => {
       const row = document.createElement("tr");
@@ -40,7 +57,11 @@ window.addEventListener("DOMContentLoaded", () => {
         <td>${q.asker}</td>
         <td>${q.context}</td>
         <td>${q.tags.join(", ")}</td>
-        <td><button class="delete-btn" data-id="${q.id}">Delete</button> <button>Draft</button></td>
+        <td>${q.draft ? q.draft.draft : "No draft yet"}</td>
+        <td>
+          <button class="delete-btn" data-id="${q.id}">Delete</button>
+          <button class="draft-btn" data-id="${q.id}">Draft</button>
+        </td>
       
         `;
         tbody.appendChild(row);
@@ -79,6 +100,17 @@ window.addEventListener("DOMContentLoaded", () => {
           await loadQuestions();
         } catch (err) {
           console.error("Failed to delete question:", err);
+        }
+      }
+      if (target.classList.contains("draft-btn")) {
+        const id = target.dataset.id;
+        try {
+          await invoke("draft_answer", { id })
+          await loadQuestions();
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          console.error("Failed to draft question:", err);
+          showNoQuestionsMessage(message);
         }
       }
   });
