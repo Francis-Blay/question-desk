@@ -9,30 +9,22 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use tauri::Manager;
-use anthropic::types::ContentBlock;
-use serde_json::json;
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(tauri::generate_handler![    
             save_question,
             list_questions,
-            delete_question,
-            draft_answer
-        ])
+            delete_question])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Draft {
     draft: String,
     verify: Vec<String>,
 }
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Question {
     id: String,
@@ -44,12 +36,7 @@ struct Question {
     draft: Option<Draft>,
 }
 
-#[derive(serde::Deserialize)]
-struct MessagesResponse {
-    content: Vec<ContentBlock>,
-}
-
-fn path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+fn path(app: &tauri::AppHandle)->Result<PathBuf, String> {
     let dir = app
         .path()
         .app_data_dir()
@@ -81,7 +68,7 @@ fn save_question(
     context: String,
     question: String,
     tags: Vec<String>,
-) -> Result<Question, String> {
+) -> Result<Question, String>{
     let mut all = read(&app)?;
     let now = chrono::Utc::now();
     let id = format!("q_{}", now.format("%Y%m%d_%H%M%S"));
@@ -115,76 +102,6 @@ fn delete_question(app: tauri::AppHandle, id: String) -> Result<(), String> {
 
 #[tauri::command]
 fn list_questions(app: tauri::AppHandle) -> Result<Vec<Question>, String> {
-    read(&app)
-}
-
-#[tauri::command]
-async fn draft_answer(app: tauri::AppHandle, id: String) -> Result<Question, String> {
-    let key = std::env::var("ANTHROPIC_API_KEY")
-        .map_err(|_| "ANTHROPIC_API_KEY is not set — see README".to_string())?;
-    let model = "claude-opus-5-5";
-    let max_tokens = 1024;
-
-    let mut questions = read(&app)?;
-    let target = questions
-        .iter_mut()
-        .find(|q| q.id == id)
-        .ok_or_else(|| format!("no question with id {id}"))?;
-
-    let client = reqwest::Client::builder()
-        .no_proxy()
-        .build()
-        .map_err(|e| e.to_string())?;
-    let post_data = json!({
-        "model": model,
-        "max_tokens": max_tokens,
-        "messages": [{
-            "role": "user",
-            "content": target.question
-        }]
-    });
-
-    let response = client
-        .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", key)
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .json(&post_data)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let status = response.status();
-    let raw_body = response.text().await.map_err(|e| e.to_string())?;
-
-    println!("Anthropic API status: {status}");
-    println!("Anthropic API raw response: {raw_body}");
-
-    if !status.is_success() {
-        return Err(format!("Anthropic API error ({status}): {raw_body}"));
-    }
-
-    let parsed: MessagesResponse = serde_json::from_str(&raw_body)
-        .map_err(|e| format!("failed to parse response: {e} — raw body: {raw_body}"))?;
-
-    let answer_text = parsed
-        .content
-        .into_iter()
-        .find_map(|block| match block {
-            ContentBlock::Text { text } => Some(text),
-            _ => None,
-        })
-        .ok_or_else(|| "no text block in response".to_string())?;
-
-    target.draft = Some(Draft {
-        draft: answer_text,
-        verify: vec!["needs review".to_string()],
-    });
-
-    let updated = target.clone();
-    write(&app, &questions)?;
-    Ok(updated)
-
-    // 1. load the question by id 2. POST to /v1/messages 3. parse JSON into Draft
-    // 4. write it back to the store 5. return the updated record
+    let all = read(&app)?;
+    Ok(all)
 }
