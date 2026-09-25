@@ -26,6 +26,7 @@ chrono = { version = "0.4.45", features = ["serde"] }
 anthropic-rs-sdk = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 reqwest = { version = "0.13.5", features = ["json"] }
+dotenvy = "0.15"
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
